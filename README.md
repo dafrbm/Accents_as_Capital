@@ -1,38 +1,13 @@
-TODO: Add more to the title of your project here
+# Accents_as_Capital - Replication Exercise
 
-# Accents_as_Capital:
+This project tries to replicate the results from the paper "Accents as Capital".
 
-TODO: Give a brief description of what your project is about
-
-This project...
-
-# Brief description of folder and file contents
-
-TODO: As project evolves, add brief description of what is inside the
-data, docs and R folders.
+## Repo description
 
 The following folders contain:
 
--   `data/`:
--   `docs/`:
--   `R/`:
+-   `code/`: Contains all R files. "master_session" runs all the scripts in their respective order. "package_loading" contains all the packages needed for the different tasks. Remaining files contain subtasks within the replication process (from data cleaning until regression analysis).
+-   `output/`: Contains graphs and tables produced from code.
+-   `papers/`: Contains external info for reviewing (causal mechanisms paper).
 
-# Installing project R package dependencies
-
-If dependencies have been managed by using
-`usethis::use_package("packagename")` through the `DESCRIPTION` file,
-installing dependencies is as easy as opening the
-`Accents_as_Capital.Rproj` file and running this command in the console:
-
-```         
-# install.packages("pak")
-pak::pak()
-```
-
-You'll need to have remotes installed for this to work.
-
-# Resource
-
-For more information on this folder and file workflow and setup, check
-out the [prodigenr](https://rostools.github.io/prodigenr) online
-documentation.
+**Note:** Data is unavailable.
