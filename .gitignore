@@ -4,3 +4,6 @@ data/
 *.Rproj*
 .DS_Store
 .Rproj.user
+.Rbuildignore
+DESCRIPTION
+TODO.md
