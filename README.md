@@ -8,5 +8,6 @@ The following folders contain:
 
 -   `code/`: Contains all R files. "master_session" runs all the scripts in their respective order. "package_loading" contains all the packages needed for the different tasks. Remaining files contain subtasks within the replication process (from data cleaning until regression analysis).
 -   `output/`: Contains graphs and tables produced from code.
+-   `Analysis/`: Contains old scripts. Temporal while migrating all code to clean control version.
 
 **Note:** Data is unavailable.
