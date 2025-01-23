@@ -1,21 +1,139 @@
+# Preparation -------------------------------------------------------------
+
+source(here::here("code/package_loading.R"))
+
 # Clean and Reshape Conjoint A --------------------------------------------
 
 # Volviendo a cargar datos
-df <- read.csv("data-raw/treatment_Conjoint.csv", header = T)
+df <- read.csv("data/raw/treatment_Conjoint.csv", header = T)
+
+# Renombrando los outcomes
+df <- df %>%
+  rename(
+    "outcome1_1" = X1_Conjoint.P1_1,
+    "outcome2_1" = X1_Conjoint.P2_1,
+    "outcome3_1" = X1_Conjoint.P3_1_1,
+    "outcome4_1" = X1_Conjoint.P3_1_2,
+    "outcome5_1" = X1_Conjoint.P3_1_3,
+    "outcome6_1" = X1_Conjoint.P4_1,
+    "deferential1_1" = X1_Conjoint.Def.1_1,
+    "deferential2_1" = X1_Conjoint.Def.2_1,
+    "outcome1_2" = X2_Conjoint.P1_1,
+    "outcome2_2" = X2_Conjoint.P2_1,
+    "outcome3_2" = X2_Conjoint.P3_1_1,
+    "outcome4_2" = X2_Conjoint.P3_1_2,
+    "outcome5_2" = X2_Conjoint.P3_1_3,
+    "outcome6_2" = X2_Conjoint.P4_1,
+    "deferential1_2" = X2_Conjoint.Def.1_1,
+    "deferential2_2" = X2_Conjoint.Def.2_1,
+    "outcome1_3" = X3_Conjoint.P1_1,
+    "outcome2_3" = X3_Conjoint.P2_1,
+    "outcome3_3" = X3_Conjoint.P3_1_1,
+    "outcome4_3" = X3_Conjoint.P3_1_2,
+    "outcome5_3" = X3_Conjoint.P3_1_3,
+    "outcome6_3" = X3_Conjoint.P4_1,
+    "deferential1_3" = X3_Conjoint.Def.1_1,
+    "deferential2_3" = X3_Conjoint.Def.2_1,
+    "outcome1_4" = X4_Conjoint.P1_1,
+    "outcome2_4" = X4_Conjoint.P2_1,
+    "outcome3_4" = X4_Conjoint.P3_1_1,
+    "outcome4_4" = X4_Conjoint.P3_1_2,
+    "outcome5_4" = X4_Conjoint.P3_1_3,
+    "outcome6_4" = X4_Conjoint.P4_1,
+    "deferential1_4" = X4_Conjoint.Def.1_1,
+    "deferential2_4" = X4_Conjoint.Def.2_1,
+    "outcome1_5" = X1_Conjoint.P1_2,
+    "outcome2_5" = X1_Conjoint.P2_2,
+    "outcome3_5" = X1_Conjoint.P3_2_1,
+    "outcome4_5" = X1_Conjoint.P3_2_2,
+    "outcome5_5" = X1_Conjoint.P3_2_3,
+    "outcome6_5" = X1_Conjoint.P4_2,
+    "deferential1_5" = X1_Conjoint.Def.1_2,
+    "deferential2_5" = X1_Conjoint.Def.2_2,
+    "outcome1_6" = X2_Conjoint.P1_2,
+    "outcome2_6" = X2_Conjoint.P2_2,
+    "outcome3_6" = X2_Conjoint.P3_2_1,
+    "outcome4_6" = X2_Conjoint.P3_2_2,
+    "outcome5_6" = X2_Conjoint.P3_2_3,
+    "outcome6_6" = X2_Conjoint.P4_2,
+    "deferential1_6" = X2_Conjoint.Def.1_2,
+    "deferential2_6" = X2_Conjoint.Def.2_2,
+    "outcome1_7" = X3_Conjoint.P1_2,
+    "outcome2_7" = X3_Conjoint.P2_2,
+    "outcome3_7" = X3_Conjoint.P3_2_1,
+    "outcome4_7" = X3_Conjoint.P3_2_2,
+    "outcome5_7" = X3_Conjoint.P3_2_3,
+    "outcome6_7" = X3_Conjoint.P4_2,
+    "deferential1_7" = X3_Conjoint.Def.1_2,
+    "deferential2_7" = X3_Conjoint.Def.2_2,
+    "outcome1_8" = X1_Conjoint.P1_3,
+    "outcome2_8" = X1_Conjoint.P2_3,
+    "outcome3_8" = X1_Conjoint.P3_3_1,
+    "outcome4_8" = X1_Conjoint.P3_3_2,
+    "outcome5_8" = X1_Conjoint.P3_3_3,
+    "outcome6_8" = X1_Conjoint.P4_3,
+    "deferential1_8" = X1_Conjoint.Def.1_3,
+    "deferential2_8" = X1_Conjoint.Def.2_3,
+    "outcome1_9" = X2_Conjoint.P1_3,
+    "outcome2_9" = X2_Conjoint.P2_3,
+    "outcome3_9" = X2_Conjoint.P3_3_1,
+    "outcome4_9" = X2_Conjoint.P3_3_2,
+    "outcome5_9" = X2_Conjoint.P3_3_3,
+    "outcome6_9" = X2_Conjoint.P4_3,
+    "deferential1_9" = X2_Conjoint.Def.1_3,
+    "deferential2_9" = X2_Conjoint.Def.2_3,
+    "outcome1_10" = X3_Conjoint.P1_3,
+    "outcome2_10" = X3_Conjoint.P2_3,
+    "outcome3_10" = X3_Conjoint.P3_3_1,
+    "outcome4_10" = X3_Conjoint.P3_3_2,
+    "outcome5_10" = X3_Conjoint.P3_3_3,
+    "outcome6_10" = X3_Conjoint.P4_3,
+    "deferential1_10" = X3_Conjoint.Def.1_3,
+    "deferential2_10" = X3_Conjoint.Def.2_3,
+    "outcome1_11" = X2_Conjoint.P1_4,
+    "outcome2_11" = X2_Conjoint.P2_4,
+    "outcome3_11" = X2_Conjoint.P3_4_1,
+    "outcome4_11" = X2_Conjoint.P3_4_2,
+    "outcome5_11" = X2_Conjoint.P3_4_3,
+    "outcome6_11" = X2_Conjoint.P4_4,
+    "deferential1_11" = X2_Conjoint.Def.1_4,
+    "deferential2_11" = X2_Conjoint.Def.2_4,
+    "outcome1_12" = X3_Conjoint.P1_4,
+    "outcome2_12" = X3_Conjoint.P2_4,
+    "outcome3_12" = X3_Conjoint.P3_4_1,
+    "outcome4_12" = X3_Conjoint.P3_4_2,
+    "outcome5_12" = X3_Conjoint.P3_4_3,
+    "outcome6_12" = X3_Conjoint.P4_4,
+    "deferential1_12" = X3_Conjoint.Def.1_4,
+    "deferential2_12" = X3_Conjoint.Def.2_4,
+    "outcome1_13" = X4_Conjoint.P1_4,
+    "outcome2_13" = X4_Conjoint.P2_4,
+    "outcome3_13" = X4_Conjoint.P3_4_1,
+    "outcome4_13" = X4_Conjoint.P3_4_2,
+    "outcome5_13" = X4_Conjoint.P3_4_3,
+    "outcome6_13" = X4_Conjoint.P4_4,
+    "deferential1_13" = X4_Conjoint.Def.1_4,
+    "deferential2_13" = X4_Conjoint.Def.2_4,
+  )
 
 # Escoger las columnas de attributes correspondientes
 attrib_cols <- names(df)[grepl("_attrib.*", names(df)) &
                            !grepl("^c", names(df))]
 
+# Eliminar las columnas
+df <- df %>% dplyr::select(-all_of(unique(attrib_cols)))
+
+rm(attrib_cols) #Borrar los vectores de nombres
+
 # Y escribir un .csv para guardar todo
 
-write.csv(df, "data-raw/treatment_Conjoint.csv", row.names = FALSE)
+write.csv(df, "data/raw/treatment_Conjoint.csv", row.names = FALSE)
 
 # El proceso es el siguiente: Creo un objeto con los atributos, otro con los
 # outcomes y luego hacemos merge con ID's, candidato y task
 
 # Cargando los datos de los audios
-mapping_file <- read_excel("data-raw/Mapeo Audios Qualtrics - audio profile characteristics.xlsx") %>%
+mapping_file <- read_excel("data/raw/Mapeo Audios Qualtrics - audio profile characteristics.xlsx") %>%
   dplyr::select(
     Identifier = `URL`,
     Region,
@@ -144,8 +262,10 @@ outcome_cols <- c("outcome1",
                   "outcome4",
                   "outcome5",
                   "outcome6")
-merge_reshape <- merge_reshape %>% filter(if_any(all_of(outcome_cols), ~ !is.na(.)))
 
+# merge_reshape <- merge_reshape %>% filter(if_any(all_of(outcome_cols), ~ !is.na(.)))
+merge_reshape <- as.data.table(merge_reshape)
+merge_reshape <- merge_reshape[!is.na(outcome1)&!is.na(outcome2)&!is.na(outcome3)&!is.na(outcome4)&!is.na(outcome5)&!is.na(outcome6)]
 # Crear dummies para los outcomes que matcheen la nueva estructura
 for (i in 1:6) {
   merge_reshape <- merge_reshape %>%
@@ -352,6 +472,9 @@ merge_reshape$ses_pca2 <- ifelse(merge_reshape$ses_pca <= percentil_33, 1, 0)
 
 # Guardar el reshaped completo
 saveRDS(merge_reshape, file = "data/conjoint_va")
+
+
+
 
 #FALTA ARREGLAR EL CÓDIGO PARA LOS LEAVE-ONE-OUT
 

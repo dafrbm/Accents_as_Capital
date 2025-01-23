@@ -1,4 +1,4 @@
-source(here::here("code/package-loading.R"))
+source(here::here("code/package_loading.R"))
 
 #Cargamos los datos del reshape
 df <- readRDS("data/conjoint_va")
@@ -9,8 +9,12 @@ df <- readRDS("data/conjoint_va")
 
 # Arreglos y joint distributions ------------------------------------------
 
+table(df$region, df$p1_3)
+
 # Ahora nos quedamos únicamente con bogotanos clasificando bogotanos
-df <- filter(df, p1_3 == "Bogotá" & region == "Bogota")
+df <- filter(df, region == "Bogota")
+df <- filter(df, p1_3 == "Bogotá")
+
 
 #Me faltaba crear un pairid
 df$pairid <- paste(df$id, df$task, sep = "_")
