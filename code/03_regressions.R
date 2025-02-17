@@ -156,7 +156,7 @@ contrasts(data_y7$big5_translation) <- contr.treatment(5)
 
 # Then run your pAMCE
 pamce_y1 <- design_pAMCE(formula = y1 ~ income + education + sex + class + experience + big5_translation,
-                         factor_name = c("class", "income", "education", "sex", "class", "big5_translation", "experience"),
+                         factor_name = c("class", "income", "education", "sex", "big5_translation", "experience"),
                          data = data,
                          cluster_id = data$id,
                          target_dist = target_dist,
@@ -172,7 +172,7 @@ calculate_single_pamce <- function(outcome_var, data, target_dist, partial_joint
   formula <- as.formula(paste(outcome_var, "~ income + education + sex + class + experience + big5_translation"))
 
   design_pAMCE(formula = formula,
-               factor_name = c("class", "income", "education", "sex", "class", "big5_translation", "experience"),
+               factor_name = c("class", "income", "education", "sex", "big5_translation", "experience"),
                data = data,
                cluster_id = data$id,
                target_dist = target_dist,
@@ -219,7 +219,7 @@ create_pamce_plot <- function(pamce_obj, outcome_title) {
                                     ifelse(results_df$p_value < 0.1, "*", "")))
 
   # Format coefficients with three decimal places
-  results_df$coef_text <- sprintf("%.3f%s", results_df$estimate, results_df$stars)
+  results_df$coef_text <- sprintf("%.4f%s", results_df$estimate, results_df$stars)
 
   # Calculate position for text (after CI bars)
   results_df$text_position <- results_df$estimate + (1.96 * results_df$std.error) + 0.02
@@ -349,7 +349,7 @@ create_latex_table <- function(pamce_list, data, data_y7) {
                       ifelse(p_val < 0.05, "^{**}",
                              ifelse(p_val < 0.1, "^{*}", "")))
 
-      est_row[j] <- sprintf("%.3f%s & (%.3f)",
+      est_row[j] <- sprintf("%.4f%s & (%.4f)",
                             estimates[i,j],
                             stars,
                             std_errors[i,j])
@@ -476,33 +476,34 @@ target_dist_het <- list(
 partial_joint_het <- list(c("income", "education", "sex"), "class",
                            "experience", "big5_translation", "low_ses")
 
-# Function to calculate pAMCE with SES interaction
-calculate_ses_pamce <- function(outcome_var, data, target_dist_het, partial_joint_het) {
-  # Create interaction term - using ses_pca1 as specified
+# Función para efectos heterogéneos (Tabla 3)
+pamce_het <- function(outcome_var, data, target_dist_het, partial_joint_het) {
 
   formula <- as.formula(paste(outcome_var,
-                              "~ class + low_ses + class*low_ses + income + education + sex + experience + big5_translation"))
+                              "~ class*low_ses + income + education + sex + experience + big5_translation"))
 
   design_pAMCE(
     formula = formula,
-    factor_name = c("class", "low_ses", "class*low_ses","income", "education", "sex", "class", "big5_translation", "experience"),
+    factor_name = c("income", "education", "sex", "experience", "big5_translation",
+                    c("class", "low_ses", "class*low_ses")),
     data = data,
     cluster_id = data$id,
     target_dist = target_dist_het,
     target_type = "partial_joint",
-    partial_joint_name = partial_joint_het
+    partial_joint_name = partial_joint_het,
+    cross_int = FALSE  # Since this is within-profile interaction
   )
 }
 
-# Calculate pAMCEs for all outcomes with SES interaction
+# pAMCEs para 6 outcomes principales
 pamce_ses_list <- list()
 for(i in 1:6) {
   outcome <- paste0("y", i)
-  pamce_ses_list[[outcome]] <- calculate_ses_pamce(outcome, data, target_dist_het, partial_joint_het)
+  pamce_ses_list[[outcome]] <- pamce_het(outcome, data, target_dist_het, partial_joint_het)
 }
 
-# Calculate pAMCE for y7 separately
-pamce_ses_list[["y7"]] <- calculate_ses_pamce("y7", data_y7, target_dist_het, partial_joint_het)
+# pAMCE para deferential
+pamce_ses_list[["y7"]] <- pamce_het("y7", data_y7, target_dist_het, partial_joint_het)
 
 # Create latex table for SES heterogeneous effects
 create_ses_latex_table <- function(pamce_list, data, data_y7) {
@@ -524,8 +525,8 @@ create_ses_latex_table <- function(pamce_list, data, data_y7) {
   # Calculate number of factors including interactions
   n_factors <- nrow(summary(pamce_list[[1]]))
 
-  estimates <- matrix(nrow = n_factors, ncol = 7)
-  std_errors <- matrix(nrow = n_factors, ncol = 7)
+  estimates <- matrix(nrow = n_factors, ncol = 8)
+  std_errors <- matrix(nrow = n_factors, ncol = 8)
 
   for(i in 1:7) {
     summ <- summary(pamce_list[[paste0("y", i)]])
@@ -540,7 +541,7 @@ create_ses_latex_table <- function(pamce_list, data, data_y7) {
 
   # Create rows for base effects and interactions
   for(i in 1:nrow(estimates)) {
-    est_row <- character(7)
+    est_row <- character(8)
     for(j in 1:7) {
       # Format estimate with stars based on p-value
       p_val <- 2 * (1 - pnorm(abs(estimates[i,j]/std_errors[i,j])))
@@ -548,13 +549,13 @@ create_ses_latex_table <- function(pamce_list, data, data_y7) {
                       ifelse(p_val < 0.05, "^{**}",
                              ifelse(p_val < 0.1, "^{*}", "")))
 
-      est_row[j] <- sprintf("%.3f%s & (%.3f)",
+      est_row[j] <- sprintf("%.4f%s & (%.4f)",
                             estimates[i,j],
                             stars,
                             std_errors[i,j])
     }
     # Remove the last & from the last element
-    est_row[7] <- sub(" & $", "", est_row[7])
+    est_row[8] <- sub(" & $", "", est_row[8])
 
     # Add row name and combine cells
     rows <- c(rows, sprintf("%s & %s \\\\",
@@ -602,4 +603,17 @@ ses_table <- create_ses_latex_table(pamce_ses_list, data, data_y7)
 writeLines(ses_table, "output/tables/ses_heterogeneous_effects.tex")
 
 # Table 4
+
+summary(pamce_ses_list[[1]])
+
+
+
+
+
+
+
+
+
+
+
 

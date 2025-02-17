@@ -313,7 +313,7 @@ merge_reshape <- merge_reshape %>%
 merge_reshape <- merge_reshape %>%
   mutate(def_indicator = ifelse(!is.na(deferential1) |
                                   !is.na(deferential2), 1, 0)) %>%
-  mutate(def_letter = ifelse(!is.na(deferential2), 1, 0))
+  mutate(def_letter = ifelse(!is.na(deferential1), 1, 0))
 
 #Sacando las columnas que ya no necesito (outcomes y deferential)
 
@@ -474,7 +474,6 @@ merge_reshape$ses_pca2 <- ifelse(merge_reshape$ses_pca <= percentil_33, 1, 0)
 
 # Guardar el reshaped completo
 saveRDS(merge_reshape, file = "data/conjoint_va")
-
 
 # Clean and Reshape Conjoint B1 --------------------------------------------
 
@@ -794,7 +793,7 @@ merge_reshape <- merge_reshape %>%
 merge_reshape <- merge_reshape %>%
   mutate(def_indicator = ifelse(!is.na(deferential1) |
                                   !is.na(deferential2), 1, 0)) %>%
-  mutate(def_letter = ifelse(!is.na(deferential2), 1, 0))
+  mutate(def_letter = ifelse(!is.na(deferential1), 1, 0))
 
 #Sacando las columnas que ya no necesito (outcomes y deferential)
 
@@ -1221,7 +1220,7 @@ merge_reshape <- merge_reshape %>%
 merge_reshape <- merge_reshape %>%
   mutate(def_indicator = ifelse(!is.na(deferential1) |
                                   !is.na(deferential2), 1, 0)) %>%
-  mutate(def_letter = ifelse(!is.na(deferential2), 1, 0))
+  mutate(def_letter = ifelse(!is.na(deferential1), 1, 0))
 
 #Sacando las columnas que ya no necesito (outcomes y deferential)
 
@@ -1676,7 +1675,7 @@ merge_reshape <- merge_reshape %>%
 merge_reshape <- merge_reshape %>%
   mutate(def_indicator = ifelse(!is.na(deferential1) |
                                   !is.na(deferential2), 1, 0)) %>%
-  mutate(def_letter = ifelse(!is.na(deferential2), 1, 0))
+  mutate(def_letter = ifelse(!is.na(deferential1), 1, 0))
 
 #Sacando las columnas que ya no necesito (outcomes y deferential)
 
@@ -2104,7 +2103,7 @@ merge_reshape <- merge_reshape %>%
 merge_reshape <- merge_reshape %>%
   mutate(def_indicator = ifelse(!is.na(deferential1) |
                                   !is.na(deferential2), 1, 0)) %>%
-  mutate(def_letter = ifelse(!is.na(deferential2), 1, 0))
+  mutate(def_letter = ifelse(!is.na(deferential1), 1, 0))
 
 #Sacando las columnas que ya no necesito (outcomes y deferential)
 
@@ -2549,7 +2548,7 @@ merge_reshape <- merge_reshape %>%
 merge_reshape <- merge_reshape %>%
   mutate(def_indicator = ifelse(!is.na(deferential1) |
                                   !is.na(deferential2), 1, 0)) %>%
-  mutate(def_letter = ifelse(!is.na(deferential2), 1, 0))
+  mutate(def_letter = ifelse(!is.na(deferential1), 1, 0))
 
 #Sacando las columnas que ya no necesito (outcomes y deferential)
 
