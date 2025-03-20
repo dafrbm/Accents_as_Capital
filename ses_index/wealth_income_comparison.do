@@ -5,7 +5,8 @@
 
 clear all
 cls
-ssc install egenmore
+*ssc install egenmore
+*net install polychoric
 
 * Macros
 
@@ -31,7 +32,6 @@ rename *, lower
 * Bienes del hogar
 gen computer = (p1077s21 == 1 | p1077s22 == 1)
 gen washing_machine = (p1077s1 == 1)
-gen refrigerator = (p1077s2 == 1)
 gen car = (p1077s15 == 1)
 gen water_heater = (p1077s6 == 1)
 gen stove = (p1077s3 == 1)
@@ -48,27 +48,12 @@ gen electricity = (p8520s1 == 1)
 * Código del municipio
 egen cod_mpio = concat(p1_departamento p1_municipio)
 
-keep directorio secuencia_encuesta secuencia_p orden cod_mpio p1_departamento fex_c i_hogar percapita cant_personas_hogar washing_machine refrigerator car water_heater stove motorcycle tv computer cable_tv electricity internet water_service vacation_house
+* Re-escalar percapita
+gen percapita_millones = percapita / 1000000
+
+keep directorio secuencia_encuesta secuencia_p orden cod_mpio p1_departamento fex_c i_hogar i_ugasto percapita percapita_millones cant_personas_hogar washing_machine car water_heater stove motorcycle tv computer cable_tv electricity internet water_service vacation_house
 
 save "$Data\ECV.dta", replace
-
-* GEIH
-
-local meses "enero febrero marzo abril mayo junio julio agosto septiembre octubre noviembre diciembre"
-foreach x of local meses {
-    use "$Data/GEIH/`x'.dta", clear
-    rename *, lower
-    save "$Data/GEIH/`x'.dta", replace
-}
-
-use "$Data/GEIH/enero.dta", clear
-
-local meses "febrero marzo abril mayo junio julio agosto septiembre octubre noviembre diciembre"
-foreach x of local meses {
-    append using "$Data/GEIH/`x'.dta"
-}
-
-save "$Data/GEIH.dta", replace
 
 **# 2. PROCESSING
 
@@ -76,143 +61,166 @@ save "$Data/GEIH.dta", replace
 use "$Data\ECV.dta", clear
 
 * Análisis de correspondencias múltiples (MCA)
-mca washing_machine refrigerator car water_heater stove motorcycle tv computer cable_tv electricity internet water_service vacation_house, method(burt)
+mca washing_machine car water_heater stove motorcycle tv computer cable_tv electricity internet water_service vacation_house, method(burt)
 
 * Sacar scores
-predict wealthindex
+predict mc1
 
 * Normalizar el índice
-sum wealthindex
-gen wealth_index = (wealthindex - r(min)) / (r(max) - r(min)) * 100
+sum mc1, detail
+gen wealth_index = (mc1 - r(min)) / (r(max) - r(min)) * 100
 
-* Algunas descriptivas
-sum wealth_index, detail
+* Análisis de Componentes Principales (PCA)
+pca washing_machine car water_heater stove motorcycle tv computer cable_tv electricity internet water_service vacation_house
+
+* Predecir el primer componente principal (que suele capturar la mayor variación)
+predict pc1
+
+* Normalizar el índice PCA para que vaya de 0 a 100
+sum pc1
+gen wealth_index_pca = (pc1 - r(min)) / (r(max) - r(min)) * 100
+
+* Análisis de Componentes Principales Policóricos (Polychoric pca)
+polychoricpca washing_machine car water_heater stove motorcycle tv computer electricity internet water_service vacation_house, score(polpca) nscore(1)
+
+* Sacar scores
+predict polpc1
+
+* Normalizar el índice
+sum polpca, detail
+gen wealth_index_polpca = (polpca - r(min)) / (r(max) - r(min)) * 100
+sum wealth_index_polpca, detail
+
+* Comparar correlaciones entre ambos índices e ingreso
+corr wealth_index_polpca wealth_index_pca pc1 percapita
+
+* Descriptivas del nuevo índice
+sum wealth_index_pca, detail
 
 *Guardar
 save "$Data/ECV_wealth_index.dta", replace
 
-* Agregar por departamento (Análisis solo ECV y ECV vs GEIH)
-preserve
-collapse (mean) wealth_index percapita [iw=fex_c], by(p1_departamento)
-rename p1_departamento cod_depto
-save "$Data/collapse_wealth_index.dta", replace
-restore
-
-* INGRESO LABORAL
-use "$Data/GEIH.dta", clear
-
-* Agregar por departamento
-collapse (mean) inglabo [iw=fex_c], by(dpto)
-rename dpto cod_depto
-
-* Guardar
-save "$Data/income_dpto.dta", replace
-
 **# 3. OUTPUT
 
-* Plots de Ingresos vs Riqueza
-
-* Approach 1. Solo ECV a nivel municipio
+* Análisis índice de Polychoric PCA
 use "$Data/ECV_wealth_index.dta", clear
 
-* Agregar por municipio
-collapse (mean) wealth_index percapita [iw=fex_c], by(cod_mpio)
+* Eliminar valores extremos globalmente
+keep if percapita < 50000000
 
-* Calcular correlación general
-corr wealth_index percapita
-local corr = r(rho)
-local corr_text = string(`corr', "%9.3f")
+* Lista de ciudades principales para comparar
+local ciudades "11001 05001 76001 08001 13001"
+local nombres "Bogotá Medellín Cali Barranquilla Cartagena"
 
-* Calcular correlación sin Bogotá
-corr wealth_index percapita if cod_mpio != "11"
-local corr_sin_bogota = r(rho)
-local corr_sin_bogota_text = string(`corr_sin_bogota', "%9.3f")
+* Gráficos con regresión ajustada (Polychoric PCA)
+forvalues i = 1/5 {
+    local ciudad: word `i' of `ciudades'
+    local nombre: word `i' of `nombres'
+    
+    preserve
+    keep if cod_mpio == "`ciudad'"
+    
+    * Calcular correlación usando factor de expansión
+    gen fex_round = round(fex_c)
+    expand fex_round
+    corr wealth_index_polpca percapita
+    local corr_`i' = r(rho)
+    local corr_`i'_text = string(`corr_`i'', "%9.3f")
+    
+    * Cargar otra vez datos
+    restore
+    preserve
+    keep if cod_mpio == "`ciudad'"
+    
+    * Máximo de ingreso por ciudad
+    quietly summarize percapita
+    local max_income = r(max)
+    local x_max = min(`max_income' * 1.1, 50000000)
+    
+    * Breaks para el gráfico
+    local x_max_m = `x_max' / 1000000
+    local x_break_m = round(`x_max_m'/4, 0.5)
+    
+    * Crear gráfico
+    twoway (scatter wealth_index_polpca percapita_millones, mcolor(navy) msize(small) msymbol(circle)) ///
+           (lfit wealth_index_polpca percapita_millones, lcolor(red)), ///
+           title("`nombre' (Polychoric PCA)", size(medium)) ///
+           subtitle("Correlation: `corr_`i'_text'", size(small)) ///
+           xtitle("Monthly per-capita income (millions COP)", size(small)) ///
+           ytitle("Household wealth index (Polychoric PCA)", size(small)) ///
+           ylabel(0(20)100, format(%9.0fc) labsize(small)) ///
+           yscale(range(0 100)) ///
+           xlabel(0(`x_break_m')`x_max_m', format(%3.1f) labsize(small)) ///
+           xscale(range(0 `x_max_m')) ///
+           graphregion(color(white) margin(medium)) bgcolor(white) ///
+           plotregion(margin(medium)) ///
+           legend(off)
+    
+    * Guardar y exportar
+    graph save "$Output/g_polpca_with_reg_`i'.gph", replace
+	graph export "$Output/g_polpca_with_reg_`i'.png", replace
+    restore
+}
 
-* Scatter Riqueza vs Ingreso
-twoway (scatter wealth_index percapita if cod_mpio != "11001", mcolor(gray) msize(medium)) ///
-       (scatter wealth_index percapita if cod_mpio == "11001", mcolor(orange) msize(large) msymbol(diamond)) ///
-       (lfit wealth_index percapita, lcolor(navy)), ///
-       title("Figure 1: Wealth index vs per-capita income by municipality", size(large)) ///
-       xtitle("Average monthly per-capita income (in COP)", size(medium)) ///
-       ytitle("Average wealth index", size(medium)) ///
-       text(90 1800000 "Correlation Colombia: `corr_text'", place(e) size(medium)) ///
-       text(85 1800000 "Correlation without Bogotá: `corr_sin_bogota_text'", place(e) size(medium)) ///
-       xlabel(0 1000000 2000000 3000000 4000000, format(%12.0fc) labsize(medium)) ///
-       ylabel(0(20)100, format(%9.0fc) labsize(medium)) ///
-       xscale(range(800000 2800000)) ///
-       graphregion(color(white) margin(medium)) bgcolor(white) ///
-       plotregion(margin(medium)) ///
-       legend(off) ///
-       text(32 2300000 "Bogotá", color(red) size(medium))
+* Combinar los gráficos
+graph combine "$Output/g_polpca_with_reg_1.gph" "$Output/g_polpca_with_reg_2.gph" "$Output/g_polpca_with_reg_3.gph" ///
+    "$Output/g_polpca_with_reg_4.gph" "$Output/g_polpca_with_reg_5.gph", ///
+    cols(2) xsize(12) ysize(15) ///
+    title("Polychoric PCA wealth index vs per-capita income with regression line", size(small)) ///
+    graphregion(color(white) margin(large)) ///
+    note("Note: All correlations calculated using sampling weights", size(small))
 
-* Guardar el gráfico
-graph export "$Output/corr_wealth_income_mun.png", replace width(1200) height(900)
+* Guardar
+graph export "$Output/cities_comparison_polpca_with_reg.png", replace width(2400) height(3000)
 
-* Approach 2. Solo ECV a nivel departamento
+* Gráficos sin regresión (Polychoric PCA)
+forvalues i = 1/5 {
+    local ciudad: word `i' of `ciudades'
+    local nombre: word `i' of `nombres'
+    
+    preserve
+    keep if cod_mpio == "`ciudad'"
+    
+    * Retomar local de correlación
+    local corr_text = `corr_`i'_text'
+    
+    * Máximo ingreso por ciudad
+    quietly summarize percapita
+    local max_income = r(max)
+    local x_max = min(`max_income' * 1.1, 50000000) 
+    
+    * Breaks para el gráfico
+    local x_max_m = `x_max' / 1000000
+    local x_break_m = round(`x_max_m'/4, 0.5)
+    
+    * Crear gráfico
+    twoway (scatter wealth_index_polpca percapita_millones, mcolor(navy) msize(small) msymbol(circle)), ///
+           title("`nombre' (Polychoric PCA)", size(medium)) ///
+           subtitle("Correlation: `corr_text'", size(small)) ///
+           xtitle("Monthly per-capita income (millions COP)", size(small)) ///
+           ytitle("Household wealth index (Polychoric PCA)", size(small)) ///
+           ylabel(0(20)100, format(%9.0fc) labsize(small)) ///
+           yscale(range(0 100)) ///
+           xlabel(0(`x_break_m')`x_max_m', format(%3.1f) labsize(small)) ///
+           xscale(range(0 `x_max_m')) ///
+           graphregion(color(white) margin(medium)) bgcolor(white) ///
+           plotregion(margin(medium)) ///
+           legend(off)
+    
+    * Guardar
+    graph save "$Output/g_polpca_no_reg_`i'.gph", replace
+	graph export "$Output/g_polpca_no_reg_`i'.png", replace
+    restore
+}
 
-use "$Data/collapse_wealth_index.dta", clear
+* Combinar los gráficos
+graph combine "$Output/g_polpca_no_reg_1.gph" "$Output/g_polpca_no_reg_2.gph" "$Output/g_polpca_no_reg_3.gph" ///
+    "$Output/g_polpca_no_reg_4.gph" "$Output/g_polpca_no_reg_5.gph", ///
+    cols(2) xsize(12) ysize(15) ///
+    title("Polychoric PCA wealth index vs per-capita income (scatter only)", size(small)) ///
+    graphregion(color(white) margin(large)) ///
+    note("Note: All correlations calculated using sampling weights", size(small))
 
-* Calcular correlación general
-corr wealth_index percapita
-local corr = r(rho)
-local corr_text = string(`corr', "%9.3f")
+* Guardar
+graph export "$Output/cities_comparison_polpca_no_reg.png", replace width(2400) height(3000)
 
-* Calcular correlación sin Bogotá
-corr wealth_index percapita if cod_depto != "11"
-local corr_sin_bogota = r(rho)
-local corr_sin_bogota_text = string(`corr_sin_bogota', "%9.3f")
-
-* Generar el gráfico de dispersión con línea de regresión y resaltar Bogotá
-twoway (scatter wealth_index percapita if cod_depto != "11", mcolor(gray) msize(medium)) ///
-       (scatter wealth_index percapita if cod_depto == "11", mcolor(orange) msize(large) msymbol(diamond)) ///
-       (lfit wealth_index percapita, lcolor(navy)), ///
-       title("Figure 2: Wealth index vs per-capita income by department", size(large)) ///
-       xtitle("Average monthly per-capita income (in COP)", size(medium)) ///
-       ytitle("Average wealth index", size(medium)) ///
-       text(90 1200000 "Correlation Colombia: `corr_text'", place(e) size(medium)) ///
-       text(85 1200000 "Correlation without Bogotá: `corr_sin_bogota_text'", place(e) size(medium)) ///
-       xlabel(500000 1000000 1500000 2000000, format(%12.0fc) labsize(medium)) ///
-       ylabel(0(20)100, format(%9.0fc) labsize(medium)) ///
-       xscale(range(800000 2800000)) ///
-       graphregion(color(white) margin(medium)) bgcolor(white) ///
-       plotregion(margin(medium)) ///
-       legend(off) ///
-       text(30 2300000 "Bogotá", color(red) size(medium))
-
-* Guardar el gráfico
-graph export "$Output/corr_wealth_income_depto.png", replace width(1200) height(900)
-
-* Approach 3. ECV vs GEIH a nivel departamento
-
-use "$Data/wealth_index.dta", clear
-merge 1:1 cod_depto using "$Data/income_dpto.dta"
-
-* Calcular correlación general
-corr wealth_index inglabo
-local corr = r(rho)
-local corr_text = string(`corr', "%9.3f")
-
-* Calcular correlación sin Bogotá
-corr wealth_index inglabo if cod_depto != "11"
-local corr_sin_bogota = r(rho)
-local corr_sin_bogota_text = string(`corr_sin_bogota', "%9.3f")
-
-* Generar el gráfico de dispersión con línea de regresión y resaltar Bogotá
-twoway (scatter wealth_index inglabo if cod_depto != "11", mcolor(gray) msize(medium)) ///
-       (scatter wealth_index inglabo if cod_depto == "11", mcolor(orange) msize(large) msymbol(diamond)) ///
-       (lfit wealth_index inglabo, lcolor(navy)), ///
-       title("Figure 3: Wealth index vs labor income", size(large)) ///
-       xtitle("Average monthly labor income (in COP)", size(medium)) ///
-       ytitle("Average wealth index", size(medium)) ///
-       text(90 1800000 "Correlation Colombia: `corr_text'", place(e) size(medium)) ///
-       text(85 1800000 "Correlation without Bogotá: `corr_sin_bogota_text'", place(e) size(medium)) ///
-       xlabel(800000 1200000 1600000 2000000 2400000, format(%12.0fc) labsize(medium)) ///
-       ylabel(0(20)100, format(%9.0fc) labsize(medium)) ///
-       xscale(range(800000 2800000)) ///
-       graphregion(color(white) margin(medium)) bgcolor(white) ///
-       plotregion(margin(medium)) ///
-       legend(off) ///
-       text(20 2650000 "Bogotá", color(red) size(medium))
-
-* Guardar el gráfico
-graph export "$Output/corr_wealth_income_geih.png", replace width(1200) height(900)
