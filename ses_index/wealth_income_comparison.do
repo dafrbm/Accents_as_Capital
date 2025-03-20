@@ -73,10 +73,10 @@ gen wealth_index = (mc1 - r(min)) / (r(max) - r(min)) * 100
 * Análisis de Componentes Principales (PCA)
 pca washing_machine car water_heater stove motorcycle tv computer cable_tv electricity internet water_service vacation_house
 
-* Predecir el primer componente principal (que suele capturar la mayor variación)
+* Sacar scores
 predict pc1
 
-* Normalizar el índice PCA para que vaya de 0 a 100
+* Normalizar
 sum pc1
 gen wealth_index_pca = (pc1 - r(min)) / (r(max) - r(min)) * 100
 
@@ -86,16 +86,13 @@ polychoricpca washing_machine car water_heater stove motorcycle tv computer elec
 * Sacar scores
 predict polpc1
 
-* Normalizar el índice
+* Normalizar
 sum polpca, detail
 gen wealth_index_polpca = (polpca - r(min)) / (r(max) - r(min)) * 100
 sum wealth_index_polpca, detail
 
 * Comparar correlaciones entre ambos índices e ingreso
 corr wealth_index_polpca wealth_index_pca pc1 percapita
-
-* Descriptivas del nuevo índice
-sum wealth_index_pca, detail
 
 *Guardar
 save "$Data/ECV_wealth_index.dta", replace
