@@ -147,7 +147,7 @@ forvalues i = 1/5 {
            title("`nombre' (Polychoric PCA)", size(medium)) ///
            subtitle("Correlation: `corr_`i'_text'", size(small)) ///
            xtitle("Monthly per-capita income (millions COP)", size(small)) ///
-           ytitle("Household wealth index (Polychoric PCA)", size(small)) ///
+           ytitle("Household wealth index (Polychoric PCA)", size(vsmall)) ///
            ylabel(0(20)100, format(%9.0fc) labsize(small)) ///
            yscale(range(0 100)) ///
            xlabel(0(`x_break_m')`x_max_m', format(%3.1f) labsize(small)) ///
@@ -198,7 +198,7 @@ forvalues i = 1/5 {
            title("`nombre' (Polychoric PCA)", size(medium)) ///
            subtitle("Correlation: `corr_text'", size(small)) ///
            xtitle("Monthly per-capita income (millions COP)", size(small)) ///
-           ytitle("Household wealth index (Polychoric PCA)", size(small)) ///
+           ytitle("Household wealth index (Polychoric PCA)", size(vsmall)) ///
            ylabel(0(20)100, format(%9.0fc) labsize(small)) ///
            yscale(range(0 100)) ///
            xlabel(0(`x_break_m')`x_max_m', format(%3.1f) labsize(small)) ///
